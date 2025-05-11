@@ -70,18 +70,10 @@ const generate = async (state: typeof StateAnnotation.State) => {
   return { answer: response.content };
 };
 
-const graph = new StateGraph(StateAnnotation)
+export const graph = new StateGraph(StateAnnotation)
   .addNode("retrieve", retrieve)
   .addNode("generate", generate)
   .addEdge("__start__", "retrieve")
   .addEdge("retrieve", "generate")
   .addEdge("generate", "__end__")
   .compile();
-
-const inputs = { question: "When was Promtior founded?" };
-
-export const stream = await graph.stream(inputs, { streamMode: "messages" });
-
-for await (const [message, _metadata] of stream) {
-  process.stdout.write(message.content + "|");
-}
