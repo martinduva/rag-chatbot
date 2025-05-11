@@ -5,7 +5,11 @@ import {
   ToolMessage,
 } from "@langchain/core/messages";
 import { tool } from "@langchain/core/tools";
-import { MessagesAnnotation, StateGraph } from "@langchain/langgraph";
+import {
+  MemorySaver,
+  MessagesAnnotation,
+  StateGraph,
+} from "@langchain/langgraph";
 import { ChatOllama, OllamaEmbeddings } from "@langchain/ollama";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import {
@@ -134,4 +138,7 @@ const graphBuilder = new StateGraph(MessagesAnnotation)
   .addEdge("tools", "generate")
   .addEdge("generate", "__end__");
 
-export const graph = graphBuilder.compile();
+const checkpointer = new MemorySaver();
+const graphWithMemory = graphBuilder.compile({ checkpointer });
+
+export { graphWithMemory as graph };

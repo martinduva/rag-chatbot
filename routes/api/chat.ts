@@ -15,16 +15,19 @@ export const handler: Handlers = {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        const inputs1 = { messages: [{ role: "user", content: "Hello" }] };
-
+        const inputs1 = { messages: [{ role: "user", content: question }] };
+        const threadConfig = {
+          configurable: { thread_id: "abc123" },
+          streamMode: "values" as const,
+        };
         try {
           for await (
             const step of await graph.stream(
               inputs1,
-              { streamMode: ["values"] },
+              threadConfig,
             )
           ) {
-            const lastMessage = step[1].messages[step[1].messages.length - 1];
+            const lastMessage = step.messages[step.messages.length - 1];
             if (lastMessage) {
               controller.enqueue(
                 encoder.encode(prettyPrint(lastMessage)),
