@@ -1,19 +1,24 @@
+import { Document } from "@langchain/core/documents";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { Annotation, StateGraph } from "@langchain/langgraph";
 import { ChatOllama, OllamaEmbeddings } from "@langchain/ollama";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import {
   dirname,
   fromFileUrl,
   join,
 } from "https://deno.land/std@0.192.0/path/mod.ts";
+import { pull } from "langchain/hub";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
+import process from "node:process";
 
 const __dirname = dirname(fromFileUrl(import.meta.url));
 
 const promtiorSlideDeckPath = join(__dirname, "../static/ai-engineer.pdf");
 
 const llm = new ChatOllama({
-  model: "llama3",
+  model: "llama3.2",
   temperature: 0,
   maxRetries: 2,
 });
@@ -37,3 +42,46 @@ const splitter = new RecursiveCharacterTextSplitter({
 const allSplits = await splitter.splitDocuments(docs);
 
 await vectorStore.addDocuments(allSplits);
+
+const promptTemplate = await pull<ChatPromptTemplate>("rlm/rag-prompt");
+
+const InputStateAnnotation = Annotation.Root({
+  question: Annotation<string>,
+});
+
+const StateAnnotation = Annotation.Root({
+  question: Annotation<string>,
+  context: Annotation<Document[]>,
+  answer: Annotation<string>,
+});
+
+const retrieve = async (state: typeof InputStateAnnotation.State) => {
+  const retrievedDocs = await vectorStore.similaritySearch(state.question);
+  return { context: retrievedDocs };
+};
+
+const generate = async (state: typeof StateAnnotation.State) => {
+  const docsContent = state.context.map((doc) => doc.pageContent).join("\n");
+  const messages = await promptTemplate.invoke({
+    question: state.question,
+    context: docsContent,
+  });
+  const response = await llm.invoke(messages);
+  return { answer: response.content };
+};
+
+const graph = new StateGraph(StateAnnotation)
+  .addNode("retrieve", retrieve)
+  .addNode("generate", generate)
+  .addEdge("__start__", "retrieve")
+  .addEdge("retrieve", "generate")
+  .addEdge("generate", "__end__")
+  .compile();
+
+const inputs = { question: "When was Promtior founded?" };
+
+export const stream = await graph.stream(inputs, { streamMode: "messages" });
+
+for await (const [message, _metadata] of stream) {
+  process.stdout.write(message.content + "|");
+}
