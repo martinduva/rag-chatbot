@@ -1,4 +1,5 @@
 import { Handlers } from "$fresh/server.ts";
+import { prettyPrint } from "../../lib/utils.ts";
 import { graph } from "../../lib/vector.ts";
 
 export const handler: Handlers = {
@@ -14,29 +15,24 @@ export const handler: Handlers = {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
+        const inputs1 = { messages: [{ role: "user", content: "Hello" }] };
+
         try {
           for await (
-            const [_, chunk] of await graph.stream(
-              { question },
-              { streamMode: ["messages"] },
+            const step of await graph.stream(
+              inputs1,
+              { streamMode: ["values"] },
             )
           ) {
-            let text = "";
-            if (Array.isArray(chunk)) {
-              const msg = chunk[0] as any;
-              text = msg.kwargs?.content ?? msg.content ?? "";
-            } else if (typeof chunk === "string") {
-              text = chunk;
-            } else if ("token" in chunk) {
-              text = (chunk as any).token;
-            } else if ("content" in chunk) {
-              text = (chunk as any).content;
-            }
-            if (text) {
-              controller.enqueue(encoder.encode(`${text}`));
+            const lastMessage = step[1].messages[step[1].messages.length - 1];
+            if (lastMessage) {
+              controller.enqueue(
+                encoder.encode(prettyPrint(lastMessage)),
+              );
             }
           }
         } catch (err) {
+          console.error("Error in stream:", err);
           controller.error(err);
         } finally {
           // controller.enqueue(encoder.encode("event: end data: "));
