@@ -6,6 +6,7 @@ import {
   fromFileUrl,
   join,
 } from "https://deno.land/std@0.192.0/path/mod.ts";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 
 const __dirname = dirname(fromFileUrl(import.meta.url));
 
@@ -26,4 +27,13 @@ const vectorStore = new MemoryVectorStore(embeddings);
 
 const loader = new PDFLoader(promtiorSlideDeckPath);
 
-export const docs = await loader.load();
+const docs = await loader.load();
+
+const splitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 1000,
+  chunkOverlap: 200,
+});
+
+const allSplits = await splitter.splitDocuments(docs);
+
+await vectorStore.addDocuments(allSplits);
