@@ -17,6 +17,10 @@
   "exclude": ["**/_fresh/*"],
   "imports": {
     "$fresh/": "https://deno.land/x/fresh@1.7.3/",
+    "@langchain/core": "npm:@langchain/core@^0.3.55",
+    "@langchain/langgraph": "npm:@langchain/langgraph@^0.2.71",
+    "@langchain/ollama": "npm:@langchain/ollama@^0.2.0",
+    "langchain": "npm:langchain@^0.3.24",
     "preact": "https://esm.sh/preact@10.22.0",
     "preact/": "https://esm.sh/preact@10.22.0/",
     "@preact/signals": "https://esm.sh/*@preact/signals@1.2.2",
