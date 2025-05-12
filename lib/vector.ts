@@ -21,7 +21,12 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { z } from "zod";
 
-import { ToolNode, toolsCondition } from "@langchain/langgraph/prebuilt";
+import {
+  createReactAgent,
+  ToolNode,
+  toolsCondition,
+} from "@langchain/langgraph/prebuilt";
+import { LanguageModelLike } from "@langchain/core/language_models/base";
 
 const __dirname = dirname(fromFileUrl(import.meta.url));
 
@@ -73,23 +78,19 @@ const retrieve = tool(
   },
 );
 
-// Step 1: Generate an AIMessage that may include a tool-call to be sent.
 async function queryOrRespond(state: typeof MessagesAnnotation.State) {
   const llmWithTools = llm.bindTools([retrieve]);
   const response = await llmWithTools.invoke(state.messages);
-  // MessagesState appends messages to state instead of overwriting
+
   return { messages: [response] };
 }
 
-// Step 2: Execute the retrieval.
 const tools = new ToolNode([retrieve]);
 
-// Step 3: Generate a response using the retrieved content.
 async function generate(state: typeof MessagesAnnotation.State) {
-  // Get generated ToolMessages
-  let recentToolMessages = [];
+  const recentToolMessages = [];
   for (let i = state["messages"].length - 1; i >= 0; i--) {
-    let message = state["messages"][i];
+    const message = state["messages"][i];
     if (message instanceof ToolMessage) {
       recentToolMessages.push(message);
     } else {
@@ -97,9 +98,8 @@ async function generate(state: typeof MessagesAnnotation.State) {
     }
   }
 
-  let toolMessages = recentToolMessages.reverse();
+  const toolMessages = recentToolMessages.reverse();
 
-  // Format into prompt
   const docsContent = toolMessages.map((doc) => doc.content).join("\n");
   const systemMessageContent =
     "You are an assistant for question-answering tasks. " +
@@ -121,7 +121,6 @@ async function generate(state: typeof MessagesAnnotation.State) {
     ...conversationMessages,
   ];
 
-  // Run
   const response = await llm.invoke(prompt);
   return { messages: [response] };
 }
@@ -141,4 +140,9 @@ const graphBuilder = new StateGraph(MessagesAnnotation)
 const checkpointer = new MemorySaver();
 const graphWithMemory = graphBuilder.compile({ checkpointer });
 
-export { graphWithMemory as graph };
+const agent = createReactAgent({
+  llm: llm as unknown as LanguageModelLike,
+  tools: [retrieve],
+});
+
+export { agent, graphWithMemory as graph };

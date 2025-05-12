@@ -1,6 +1,6 @@
 import { Handlers } from "$fresh/server.ts";
 import { prettyPrint } from "../../lib/utils.ts";
-import { graph } from "../../lib/vector.ts";
+import { agent, graph } from "../../lib/vector.ts";
 
 export const handler: Handlers = {
   GET(req) {
@@ -22,7 +22,7 @@ export const handler: Handlers = {
         };
         try {
           for await (
-            const step of await graph.stream(
+            const step of await agent.stream(
               inputs1,
               threadConfig,
             )
