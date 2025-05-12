@@ -29,37 +29,35 @@ import {
 import { LanguageModelLike } from "@langchain/core/language_models/base";
 
 const __dirname = dirname(fromFileUrl(import.meta.url));
-
 const promtiorSlideDeckPath = join(__dirname, "../static/ai-engineer.pdf");
 
+const LLAMA_MODEL = Deno.env.get("LLAMA_MODEL") ?? "llama3.2";
+const EMBEDDING_MODEL = Deno.env.get("EMBEDDING_MODEL") ?? "nomic-embed-text";
+const OLLAMA_BASE_URL = Deno.env.get("OLLAMA_BASE_URL") ?? "localhost:11434";
+
 const llm = new ChatOllama({
-  model: "llama3.2",
+  model: LLAMA_MODEL,
   temperature: 0,
   maxRetries: 2,
 });
 
 const embeddings = new OllamaEmbeddings({
-  model: "mxbai-embed-large",
-  baseUrl: "http://localhost:11434",
+  model: EMBEDDING_MODEL,
+  baseUrl: OLLAMA_BASE_URL,
 });
 
 const vectorStore = new MemoryVectorStore(embeddings);
-
 const loader = new PDFLoader(promtiorSlideDeckPath);
-
 const docs = await loader.load();
 
 const splitter = new RecursiveCharacterTextSplitter({
   chunkSize: 1000,
   chunkOverlap: 500,
 });
-
 const allSplits = await splitter.splitDocuments(docs);
-
 await vectorStore.addDocuments(allSplits);
 
 const retrieveSchema = z.object({ query: z.string() });
-
 const retrieve = tool(
   async ({ query }) => {
     const retrievedDocs = await vectorStore.similaritySearch(query, 2);
@@ -81,7 +79,6 @@ const retrieve = tool(
 async function queryOrRespond(state: typeof MessagesAnnotation.State) {
   const llmWithTools = llm.bindTools([retrieve]);
   const response = await llmWithTools.invoke(state.messages);
-
   return { messages: [response] };
 }
 
@@ -97,9 +94,7 @@ async function generate(state: typeof MessagesAnnotation.State) {
       break;
     }
   }
-
   const toolMessages = recentToolMessages.reverse();
-
   const docsContent = toolMessages.map((doc) => doc.content).join("\n");
   const systemMessageContent =
     "You are an assistant for question-answering tasks. " +
