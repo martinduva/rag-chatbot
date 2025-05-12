@@ -1,6 +1,6 @@
 import { Handlers } from "$fresh/server.ts";
 import { prettyPrint } from "../../lib/utils.ts";
-import { agent, graph } from "../../lib/vector.ts";
+import { agent } from "../../lib/vector.ts";
 
 export const handler: Handlers = {
   GET(req) {
