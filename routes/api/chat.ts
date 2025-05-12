@@ -1,6 +1,6 @@
 import { Handlers } from "$fresh/server.ts";
-import { prettyPrint } from "../../lib/utils.ts";
-import { agent } from "../../lib/vector.ts";
+import { isAIMessageChunk } from "@langchain/core/messages";
+import { graph } from "../../lib/vector.ts";
 
 export const handler: Handlers = {
   GET(req) {
@@ -15,22 +15,21 @@ export const handler: Handlers = {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        const inputs1 = { messages: [{ role: "user", content: question }] };
+        const inputs = { messages: [{ role: "user", content: question }] };
         const threadConfig = {
           configurable: { thread_id: "abc123" },
-          streamMode: "values" as const,
+          streamMode: "messages" as const,
         };
         try {
           for await (
-            const step of await agent.stream(
-              inputs1,
+            const [chunk, _meta] of await graph.stream(
+              inputs,
               threadConfig,
             )
           ) {
-            const lastMessage = step.messages[step.messages.length - 1];
-            if (lastMessage) {
+            if (isAIMessageChunk(chunk)) {
               controller.enqueue(
-                encoder.encode(prettyPrint(lastMessage)),
+                encoder.encode(chunk.text),
               );
             }
           }
@@ -38,7 +37,6 @@ export const handler: Handlers = {
           console.error("Error in stream:", err);
           controller.error(err);
         } finally {
-          // controller.enqueue(encoder.encode("event: end data: "));
           controller.close();
         }
       },
@@ -46,7 +44,7 @@ export const handler: Handlers = {
 
     return new Response(stream, {
       headers: {
-        "Content-Type": "text/event-stream; charset=utf-8",
+        "Content-Type": "text/plain; charset=utf-8",
         "Cache-Control": "no-cache, no-transform",
         "Connection": "keep-alive",
         "X-Accel-Buffering": "no",
