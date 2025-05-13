@@ -1,16 +1,8 @@
-# Fresh project
+# Promtior RAG Chatbot challenge
 
-Your new Fresh project is ready to go. You can follow the Fresh "Getting
-Started" guide here: https://fresh.deno.dev/docs/getting-started
+This repository contains a simple RAG (Retrieval-Augmented Generation) chatbot
+that uses the PromtiorAI Website and a given PDF with more context about the
+company as knowledge base, to generate responses based on user questions.
 
-### Usage
-
-Make sure to install Deno: https://deno.land/manual/getting_started/installation
-
-Then start the project:
-
-```
-deno task start
-```
-
-This will watch the project directory and restart as necessary.
+To access the documentation, please visit this [docs](docs/index.md) file
+instead.
