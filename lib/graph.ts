@@ -12,14 +12,11 @@ import {
 } from "@langchain/langgraph";
 import { toolsCondition } from "@langchain/langgraph/prebuilt";
 
-import { docs } from "./documents.ts";
+import { indexDocuments } from "./indexing.ts";
 import { llm } from "./models.ts";
-import { splitter } from "./text-splitter.ts";
 import { retrieve, tools } from "./tools.ts";
-import { vectorStore } from "./vector-store.ts";
 
-const allSplits = await splitter.splitDocuments(docs);
-await vectorStore.addDocuments(allSplits);
+await indexDocuments();
 
 async function queryOrRespond(state: typeof MessagesAnnotation.State) {
   const llmWithTools = llm.bindTools([retrieve]);
