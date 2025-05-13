@@ -7,5 +7,8 @@ import {
 const __dirname = dirname(fromFileUrl(import.meta.url));
 const promtiorSlideDeckPdfPath = join(__dirname, "../static/ai-engineer.pdf");
 
-export const DOC_CONTEXT_FILE_URL = Deno.env.get("DOC_CONTEXT_FILE_URL") ??
+export const PROMTIOR_PDF_SRC = Deno.env.get("PROMTIOR_PDF_URL") ??
   promtiorSlideDeckPdfPath;
+
+export const PROMTIOR_WEBSITE_SRC = Deno.env.get("PROMTIOR_WEBSITE_URL") ??
+  "https://www.promtior.ai/service";

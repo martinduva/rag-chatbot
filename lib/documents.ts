@@ -1,5 +1,17 @@
+import "cheerio";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
-import { DOC_CONTEXT_FILE_URL } from "./context.ts";
+import { CheerioWebBaseLoader } from "@langchain/community/document_loaders/web/cheerio";
 
-const loader = new PDFLoader(DOC_CONTEXT_FILE_URL);
-export const documents = await loader.load();
+import { PROMTIOR_PDF_SRC, PROMTIOR_WEBSITE_SRC } from "./context.ts";
+
+const pdfLoader = new PDFLoader(PROMTIOR_PDF_SRC);
+const webLoader = new CheerioWebBaseLoader(PROMTIOR_WEBSITE_SRC, {
+  selector: "main",
+});
+
+const [pdfDocs, webDocs] = await Promise.all([
+  pdfLoader.load(),
+  webLoader.load(),
+]);
+
+export const documents = [...pdfDocs, ...webDocs];

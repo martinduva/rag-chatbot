@@ -21,6 +21,7 @@
     "@langchain/core": "npm:@langchain/core@^0.3.55",
     "@langchain/langgraph": "npm:@langchain/langgraph@^0.2.71",
     "@langchain/ollama": "npm:@langchain/ollama@^0.2.0",
+    "cheerio": "npm:cheerio@^1.0.0",
     "langchain": "npm:langchain@^0.3.24",
     "pdf-parse": "npm:pdf-parse@^1.1.1",
     "preact": "https://esm.sh/preact@10.22.0",
