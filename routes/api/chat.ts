@@ -17,7 +17,7 @@ export const handler: Handlers = {
       async start(controller) {
         const inputs = { messages: [{ role: "user", content: question }] };
         const threadConfig = {
-          configurable: { thread_id: "abc123" },
+          configurable: { thread_id: "fixed_single_thread" },
           streamMode: "messages" as const,
         };
         try {
