@@ -21,23 +21,20 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { z } from "zod";
 
-import {
-  createReactAgent,
-  ToolNode,
-  toolsCondition,
-} from "@langchain/langgraph/prebuilt";
-import { LanguageModelLike } from "@langchain/core/language_models/base";
+import { ToolNode, toolsCondition } from "@langchain/langgraph/prebuilt";
 
 const __dirname = dirname(fromFileUrl(import.meta.url));
 const promtiorSlideDeckPath = join(__dirname, "../static/ai-engineer.pdf");
 
 const LLAMA_MODEL = Deno.env.get("LLAMA_MODEL") ?? "llama3.2";
-const EMBEDDING_MODEL = Deno.env.get("EMBEDDING_MODEL") ?? "nomic-embed-text";
+const EMBEDDING_MODEL = Deno.env.get("EMBEDDING_MODEL") ??
+  "mxbai-embed-large";
 const OLLAMA_BASE_URL = Deno.env.get("OLLAMA_BASE_URL") ?? "localhost:11434";
 
 const llm = new ChatOllama({
   model: LLAMA_MODEL,
-  temperature: 0,
+  baseUrl: OLLAMA_BASE_URL,
+  temperature: 0.5,
   maxRetries: 2,
 });
 
@@ -54,6 +51,7 @@ const splitter = new RecursiveCharacterTextSplitter({
   chunkSize: 1000,
   chunkOverlap: 500,
 });
+
 const allSplits = await splitter.splitDocuments(docs);
 await vectorStore.addDocuments(allSplits);
 
@@ -99,9 +97,13 @@ async function generate(state: typeof MessagesAnnotation.State) {
   const systemMessageContent =
     "You are an assistant for question-answering tasks. " +
     "Use the following pieces of retrieved context to answer " +
-    "the question. If you don't know the answer, say that you " +
-    "don't know. Use three sentences maximum and keep the " +
-    "answer concise." +
+    "the question. Ignore the fact that the provided context comes" +
+    "from an interview challenge. Don't mention anything about the" +
+    "technical test. Act as if you were to respond just to questions" +
+    "about the company. If you don't know the answer, say that" +
+    "you don't know, but just if you have no idea, if at least you have" +
+    "some information say it without hesitating. Use three sentences" +
+    "maximum and keep the answer concise." +
     "\n\n" +
     `${docsContent}`;
 
@@ -111,6 +113,7 @@ async function generate(state: typeof MessagesAnnotation.State) {
       message instanceof SystemMessage ||
       (message instanceof AIMessage && message.tool_calls?.length == 0),
   );
+
   const prompt = [
     new SystemMessage(systemMessageContent),
     ...conversationMessages,
@@ -133,11 +136,7 @@ const graphBuilder = new StateGraph(MessagesAnnotation)
   .addEdge("generate", "__end__");
 
 const checkpointer = new MemorySaver();
+
 const graphWithMemory = graphBuilder.compile({ checkpointer });
 
-const agent = createReactAgent({
-  llm: llm as unknown as LanguageModelLike,
-  tools: [retrieve],
-});
-
-export { agent, graphWithMemory as graph };
+export { graphWithMemory as graph };

@@ -1,6 +1,6 @@
 import { Handlers } from "$fresh/server.ts";
 import { isAIMessageChunk } from "@langchain/core/messages";
-import { graph } from "../../lib/vector.ts";
+import { graph } from "../../lib/graph.ts";
 
 export const handler: Handlers = {
   GET(req) {
