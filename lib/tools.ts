@@ -1,8 +1,8 @@
 import { tool } from "@langchain/core/tools";
+import { ToolNode } from "@langchain/langgraph/prebuilt";
 import z from "zod";
 
-import { vectorStore } from "./vector-store.ts";
-import { ToolNode } from "@langchain/langgraph/prebuilt";
+import { vectorStore } from "./vector-stores.ts";
 
 const retrieveSchema = z.object({ query: z.string() });
 
