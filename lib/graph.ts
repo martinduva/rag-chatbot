@@ -5,6 +5,7 @@ import {
   ToolMessage,
 } from "@langchain/core/messages";
 import {
+  BaseCheckpointSaver,
   MemorySaver,
   MessagesAnnotation,
   StateGraph,
@@ -67,20 +68,24 @@ async function generate(state: typeof MessagesAnnotation.State) {
   return { messages: [response] };
 }
 
-const graphBuilder = new StateGraph(MessagesAnnotation)
-  .addNode("queryOrRespond", queryOrRespond)
-  .addNode("tools", tools)
-  .addNode("generate", generate)
-  .addEdge("__start__", "queryOrRespond")
-  .addConditionalEdges("queryOrRespond", toolsCondition, {
-    __end__: "__end__",
-    tools: "tools",
-  })
-  .addEdge("tools", "generate")
-  .addEdge("generate", "__end__");
+const graphBuilder = (checkpointer: BaseCheckpointSaver) => {
+  const graph = new StateGraph(MessagesAnnotation)
+    .addNode("queryOrRespond", queryOrRespond)
+    .addNode("tools", tools)
+    .addNode("generate", generate)
+    .addEdge("__start__", "queryOrRespond")
+    .addConditionalEdges("queryOrRespond", toolsCondition, {
+      __end__: "__end__",
+      tools: "tools",
+    })
+    .addEdge("tools", "generate")
+    .addEdge("generate", "__end__");
+
+  return graph.compile({ checkpointer });
+};
 
 const checkpointer = new MemorySaver();
 
-const graphWithMemory = graphBuilder.compile({ checkpointer });
+const graphWithMemory = graphBuilder(checkpointer);
 
 export { graphWithMemory as graph };
