@@ -5,7 +5,10 @@ import {
 } from "https://deno.land/std@0.192.0/path/mod.ts";
 
 const __dirname = dirname(fromFileUrl(import.meta.url));
-const promtiorSlideDeckPdfPath = join(__dirname, "../static/ai-engineer.pdf");
+const promtiorSlideDeckPdfPath = join(
+  __dirname,
+  "../static/promtior-slides.pdf",
+);
 
 export const PROMTIOR_PDF_SRC = Deno.env.get("PROMTIOR_PDF_URL") ??
   promtiorSlideDeckPdfPath;
