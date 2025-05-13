@@ -4,83 +4,27 @@ import {
   SystemMessage,
   ToolMessage,
 } from "@langchain/core/messages";
-import { tool } from "@langchain/core/tools";
 import {
   MemorySaver,
   MessagesAnnotation,
   StateGraph,
 } from "@langchain/langgraph";
-import { ChatOllama, OllamaEmbeddings } from "@langchain/ollama";
-import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
-import {
-  dirname,
-  fromFileUrl,
-  join,
-} from "https://deno.land/std@0.192.0/path/mod.ts";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { MemoryVectorStore } from "langchain/vectorstores/memory";
-import { z } from "zod";
+import { toolsCondition } from "@langchain/langgraph/prebuilt";
 
-import { ToolNode, toolsCondition } from "@langchain/langgraph/prebuilt";
-
-const __dirname = dirname(fromFileUrl(import.meta.url));
-const promtiorSlideDeckPath = join(__dirname, "../static/ai-engineer.pdf");
-
-const LLAMA_MODEL = Deno.env.get("LLAMA_MODEL") ?? "llama3.2";
-const EMBEDDING_MODEL = Deno.env.get("EMBEDDING_MODEL") ??
-  "mxbai-embed-large";
-const OLLAMA_BASE_URL = Deno.env.get("OLLAMA_BASE_URL") ?? "localhost:11434";
-
-const llm = new ChatOllama({
-  model: LLAMA_MODEL,
-  baseUrl: OLLAMA_BASE_URL,
-  temperature: 0.5,
-  maxRetries: 2,
-});
-
-const embeddings = new OllamaEmbeddings({
-  model: EMBEDDING_MODEL,
-  baseUrl: OLLAMA_BASE_URL,
-});
-
-const vectorStore = new MemoryVectorStore(embeddings);
-const loader = new PDFLoader(promtiorSlideDeckPath);
-const docs = await loader.load();
-
-const splitter = new RecursiveCharacterTextSplitter({
-  chunkSize: 1000,
-  chunkOverlap: 500,
-});
+import { docs } from "./documents.ts";
+import { llm } from "./models.ts";
+import { splitter } from "./text-splitter.ts";
+import { retrieve, tools } from "./tools.ts";
+import { vectorStore } from "./vector-store.ts";
 
 const allSplits = await splitter.splitDocuments(docs);
 await vectorStore.addDocuments(allSplits);
-
-const retrieveSchema = z.object({ query: z.string() });
-const retrieve = tool(
-  async ({ query }) => {
-    const retrievedDocs = await vectorStore.similaritySearch(query, 2);
-    const serialized = retrievedDocs
-      .map(
-        (doc) => `Source: ${doc.metadata.source}\nContent: ${doc.pageContent}`,
-      )
-      .join("\n");
-    return [serialized, retrievedDocs];
-  },
-  {
-    name: "retrieve",
-    description: "Retrieve information related to a query.",
-    schema: retrieveSchema,
-    responseFormat: "content_and_artifact",
-  },
-);
 
 async function queryOrRespond(state: typeof MessagesAnnotation.State) {
   const llmWithTools = llm.bindTools([retrieve]);
   const response = await llmWithTools.invoke(state.messages);
   return { messages: [response] };
 }
-
-const tools = new ToolNode([retrieve]);
 
 async function generate(state: typeof MessagesAnnotation.State) {
   const recentToolMessages = [];
