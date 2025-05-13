@@ -65,7 +65,7 @@ but whole steps instead.
 Below there's a sequence diagram illustrating the flow of the application
 startup and following requests:
 
-<img src="./sequence-diagram.svg" alt="Sequence diagram" style="background: white;"/>
+<img src="./sequence-diagram.png" alt="Sequence diagram"/>
 
 ### Graph diagram
 
